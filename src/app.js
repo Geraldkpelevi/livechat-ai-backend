@@ -1,6 +1,5 @@
-
-import express from "express";
 import cors from "cors";
+import express from "express";
 
 import adminRoutes from "./routes/adminRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
@@ -12,11 +11,10 @@ const app = express();
 // CORS CONFIGURATION
 // --------------------------------------------------
 
-const allowedOrigins = new Set([
+const allowedOrigins = [
   "https://live-chat-ai-nine.vercel.app",
   "http://localhost:5173",
-
-  ...(process.env.CLIENT_URL ?? "")
+  ...(process.env.CLIENT_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean)
@@ -24,36 +22,24 @@ const allowedOrigins = new Set([
       try {
         return new URL(origin).origin;
       } catch {
-        console.warn(`Invalid CLIENT_URL origin: ${origin}`);
+        console.warn("Invalid CORS origin:", origin);
         return null;
       }
     })
     .filter(Boolean),
-]);
+];
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests without an Origin header (e.g. server-to-server)
-    if (!origin || allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
-
-    console.warn(`CORS blocked origin: ${origin}`);
-
-    return callback(null, false);
-  },
-
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
   allowedHeaders: ["Content-Type", "Authorization"],
-
   credentials: true,
-
   optionsSuccessStatus: 204,
 };
 
-// Register CORS before routes and other middleware
 app.use(cors(corsOptions));
+
+console.log("Allowed CORS origins:", allowedOrigins);
 
 // --------------------------------------------------
 // BODY PARSING
