@@ -1,5 +1,6 @@
-import cors from "cors";
+
 import express from "express";
+import cors from "cors";
 
 import adminRoutes from "./routes/adminRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
@@ -7,10 +8,7 @@ import authRoutes from "./routes/authRoutes.js";
 
 const app = express();
 
-// --------------------------------------------------
-// CORS CONFIGURATION
-// --------------------------------------------------
-
+// CORS configuration
 const allowedOrigins = [
   "https://live-chat-ai-nine.vercel.app",
   "http://localhost:5173",
@@ -41,17 +39,11 @@ app.use(cors(corsOptions));
 
 console.log("Allowed CORS origins:", allowedOrigins);
 
-// --------------------------------------------------
-// BODY PARSING
-// --------------------------------------------------
-
+// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --------------------------------------------------
-// HEALTH CHECK
-// --------------------------------------------------
-
+// Health check
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -59,22 +51,16 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// --------------------------------------------------
-// API ROUTES
-// --------------------------------------------------
-
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 
-// --------------------------------------------------
-// GLOBAL ERROR HANDLER
-// --------------------------------------------------
-
+// Global error handler
 app.use((err, req, res, next) => {
   console.error("API Error:", err.message);
 
-  return res.status(err.status || 500).json({
+  res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal server error",
   });
