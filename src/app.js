@@ -1,7 +1,7 @@
 
 import express from "express";
 import cors from "cors";
-
+import chatRoutes from "./routes/chatRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -55,7 +55,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
-
+app.use("/api/chat", chatRoutes);
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("API Error:", err.message);

@@ -6,15 +6,20 @@ import authorizeRoles from "../middleware/roleMiddleware.js";
 
 import {
   createAgent,
+  getAllUsers,
+  getUserById,
+  updateUserRole,
+  updateUserStatus,
+  deleteUser,
 } from "../controllers/adminController.js";
 
 const router = express.Router();
 
+// Protect all admin routes
 router.use(authMiddleware);
 router.use(authorizeRoles("ADMIN"));
 
-router.post("/agents", createAgent);
-
+// Admin dashboard
 router.get("/dashboard", (req, res) => {
   res.status(200).json({
     success: true,
@@ -25,5 +30,15 @@ router.get("/dashboard", (req, res) => {
     },
   });
 });
+
+// Agent management
+router.post("/agents", createAgent);
+
+// User management
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserById);
+router.patch("/users/:id/role", updateUserRole);
+router.patch("/users/:id/status", updateUserStatus);
+router.delete("/users/:id", deleteUser);
 
 export default router;

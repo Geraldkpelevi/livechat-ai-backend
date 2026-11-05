@@ -6,6 +6,7 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
       required: true,
+      index: true,
     },
 
     sender: {
@@ -14,9 +15,9 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
-    senderType: {
+    senderRole: {
       type: String,
-      enum: ["USER", "AI", "ADMIN", "SYSTEM"],
+      enum: ["CUSTOMER", "AGENT", "ADMIN", "AI"],
       required: true,
     },
 
@@ -24,35 +25,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-    },
-
-    messageType: {
-      type: String,
-      enum: ["TEXT", "IMAGE", "FILE"],
-      default: "TEXT",
-    },
-
-    status: {
-      type: String,
-      enum: ["PENDING", "SENT", "DELIVERED", "READ", "FAILED"],
-      default: "SENT",
-    },
-
-    aiMetadata: {
-      model: {
-        type: String,
-        default: "",
-      },
-
-      promptTokens: {
-        type: Number,
-        default: 0,
-      },
-
-      completionTokens: {
-        type: Number,
-        default: 0,
-      },
+      maxlength: 10000,
     },
   },
   {
@@ -60,10 +33,7 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-messageSchema.index({
-  conversation: 1,
-  createdAt: 1,
-});
+messageSchema.index({ conversation: 1, createdAt: 1 });
 
 const Message = mongoose.model("Message", messageSchema);
 
