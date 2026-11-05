@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
 
 import {
   registerUser,
@@ -35,8 +37,7 @@ export const register = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    const isDuplicate =
-      error.message.includes("already exists");
+    const isDuplicate = error.message.includes("already exists");
 
     return res.status(isDuplicate ? 409 : 500).json({
       success: false,
@@ -95,4 +96,89 @@ export const getMe = async (req, res) => {
       },
     },
   });
+};
+
+// Change password
+export const changePassword = async (req, res) => {
+  try {
+    const {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    } = req.body;
+
+    // Validate required fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All password fields are required",
+      });
+    }
+
+    // Validate new password length
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters",
+      });
+    }
+
+    // Confirm new password
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password and confirmation do not match",
+      });
+    }
+
+    // Prevent using the current password again
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from current password",
+      });
+    }
+
+    // Retrieve authenticated user with password hash
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to change password. Please try again.",
+    });
+  }
 };
