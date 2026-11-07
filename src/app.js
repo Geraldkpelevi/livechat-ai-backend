@@ -1,10 +1,12 @@
-
-import express from "express";
 import cors from "cors";
-import chatRoutes from "./routes/chatRoutes.js";
+import express from "express";
 import adminRoutes from "./routes/adminRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import employeeRoutes from "./routes/employeeRoutes.js";
+import timeClockRoutes from "./routes/timeClockRoutes.js";
 
 const app = express();
 
@@ -56,14 +58,27 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/admin/employees", employeeRoutes);
+app.use("/api/employee/time-clock", timeClockRoutes);
+app.use("/api", attendanceRoutes);
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error("API Error:", err.message);
 
-  res.status(err.status || 500).json({
+app.use((err, req, res, next) => {
+  console.error("API Error:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const statusCode =
+    err.statusCode ||
+    (err.name === "ValidationError" ? 400 : 500);
+
+  return res.status(statusCode).json({
     success: false,
     message: err.message || "Internal server error",
   });
 });
+
 
 export default app;
