@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import adminRoutes from "./routes/adminRoutes.js";
+import adminCustomersRoutes from "./routes/adminCustomersRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -55,7 +55,7 @@ app.get("/api/health", (req, res) => {
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminCustomersRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/admin/employees", employeeRoutes);

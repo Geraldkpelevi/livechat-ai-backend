@@ -6,12 +6,11 @@ import authorizeRoles from "../middleware/roleMiddleware.js";
 
 import {
   createAgent,
-  getAllUsers,
-  getUserById,
-  updateUserRole,
-  updateUserStatus,
-  deleteUser,
-} from "../controllers/adminController.js";
+  getAllCustomer,
+  getCustomerById,
+  updateCustomerStatus,
+  deleteCustomer,
+} from "../controllers/adminCustomerController.js";
 
 const router = express.Router();
 
@@ -31,14 +30,13 @@ router.get("/dashboard", (req, res) => {
   });
 });
 
-// Agent management
+
 router.post("/agents", createAgent);
 
-// User management
-router.get("/users", getAllUsers);
-router.get("/users/:id", getUserById);
-router.patch("/users/:id/role", updateUserRole);
-router.patch("/users/:id/status", updateUserStatus);
-router.delete("/users/:id", deleteUser);
+// Customer management
+router.get("/customers", getAllCustomer);
+router.get("/customers/:id", getCustomerById);
+router.patch("/customers/:id/status", updateCustomerStatus);
+router.delete("/customers/:id", deleteCustomer);
 
 export default router;

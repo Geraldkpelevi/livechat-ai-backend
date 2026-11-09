@@ -1,4 +1,4 @@
-
+import mongoose from "mongoose";
 import Employee from "../models/Employee.js";
 import User from "../models/User.js";
 
@@ -21,7 +21,7 @@ export const createEmployeeService = async (data, adminId) => {
 
   if (!["AGENT", "EMPLOYEE"].includes(user.role)) {
     throw new Error(
-      "Only agent or employee accounts can have employee profiles"
+      "Only agent or employee accounts can have employee profiles",
     );
   }
 
@@ -63,8 +63,10 @@ export const getEmployeesService = async (filters = {}) => {
 };
 
 export const getEmployeeByIdService = async (id) => {
-  const employee = await Employee.findById(id)
-    .populate("user", "name email role isActive");
+  const employee = await Employee.findById(id).populate(
+    "user",
+    "name email role isActive",
+  );
 
   if (!employee) {
     throw new Error("Employee not found");
@@ -98,7 +100,7 @@ export const updateEmployeeService = async (id, data) => {
     {
       new: true,
       runValidators: true,
-    }
+    },
   ).populate("user", "name email role isActive");
 
   if (!employee) {
@@ -106,6 +108,167 @@ export const updateEmployeeService = async (id, data) => {
   }
 
   return employee;
+};
+
+export const updateEmployeeStatusService = async (id, status) => {
+  if (!mongoose.isValidObjectId(id)) {
+    const error = new Error("Invalid employee ID");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const allowedStatuses = ["ACTIVE", "INACTIVE", "SUSPENDED"];
+
+  if (!allowedStatuses.includes(status)) {
+    const error = new Error(
+      `Invalid employee status. Allowed statuses: ${allowedStatuses.join(", ")}`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const employee = await Employee.findById(id);
+
+  if (!employee) {
+    const error = new Error("Employee not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  employee.status = status;
+  await employee.save();
+
+  return employee;
+};
+
+export const updateEmployeeRoleService = async (
+  employeeId,
+  role,
+  adminId,
+) => {
+  if (!mongoose.isValidObjectId(employeeId)) {
+    const error = new Error("Invalid employee ID");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!mongoose.isValidObjectId(adminId)) {
+    const error = new Error(
+      "Only administrators are permitted to assign employee roles",
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const admin = await User.findById(adminId);
+
+  if (!admin || !admin.isActive || admin.role !== "ADMIN") {
+    const error = new Error(
+      "Only administrators are permitted to assign employee roles",
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const allowedRoles = [
+    "EMPLOYEE",
+    "AGENT",
+    "MANAGER",
+    "SUPERVISOR",
+    "HR",
+    "ACCOUNTANT",
+    "IT_SUPPORT",
+    "SALES",
+    "MARKETING",
+    "DEVELOPER",
+    "DESIGNER",
+    "ANALYST",
+    "CONSULTANT",
+    "PROJECT_MANAGER",
+    "TEAM_LEAD",
+    "DIRECTOR",
+    "VP",
+    "C_LEVEL",
+    "ADMIN",
+  ];
+
+  if (!allowedRoles.includes(role)) {
+    const error = new Error(
+      `Invalid employee role. Allowed roles: ${allowedRoles.join(", ")}`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const employee = await Employee.findById(employeeId).populate(
+    "user",
+    "name email role isActive",
+  );
+
+  if (!employee) {
+    const error = new Error("Employee not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!employee.user) {
+    const error = new Error("Employee has no associated user account");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (employee.status !== "ACTIVE") {
+    const error = new Error(
+      "Only active employees can receive employee roles",
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const user = employee.user;
+
+  if (user.role === "CUSTOMER") {
+    const error = new Error("Customers cannot be assigned employee roles");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  if (user.role === "ADMIN") {
+    const error = new Error("Administrator roles cannot be changed here");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const previousRole = user.role;
+
+  if (previousRole === role) {
+    return {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+      changed: false,
+    };
+  }
+
+  user.role = role;
+
+  await user.save();
+
+  return {
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      previousRole,
+      isActive: user.isActive,
+    },
+    changed: true,
+  };
 };
 
 export const deleteEmployeeService = async (id) => {

@@ -9,7 +9,9 @@ import {
   getEmployees,
   getEmployeeById,
   updateEmployee,
+  updateEmployeeStatus,
   deleteEmployee,
+  updateEmployeeRole,
 } from "../controllers/employeeController.js";
 
 const router = express.Router();
@@ -21,6 +23,8 @@ router.post("/", createEmployee);
 router.get("/", getEmployees);
 router.get("/:id", getEmployeeById);
 router.patch("/:id", updateEmployee);
+router.patch("/:id/status", updateEmployeeStatus);
 router.delete("/:id", deleteEmployee);
+router.patch("/:id/role", updateEmployeeRole);
 
 export default router;
