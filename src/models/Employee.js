@@ -63,6 +63,11 @@ const employeeSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    shift: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Shift",
+      default: null,
+    },
 
     registrationSource: {
       type: String,

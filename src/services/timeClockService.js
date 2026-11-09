@@ -1,6 +1,47 @@
 
 import Attendance from "../models/Attendance.js";
 import { formatDuration } from "../utils/timeFormatter.js";
+
+import Employee from "../models/Employee.js";
+
+import {
+  calculateShiftAttendance,
+} from "../utils/shiftAttendanceCalculator.js";
+
+export const getTimeClockStatusService = async (employeeId) => {
+  const employee = await Employee.findById(employeeId)
+    .populate("shift");
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  // Keep your existing logic for finding today's attendance.
+  const attendance = await Attendance.findOne({
+    employee: employee._id,
+    workDate: getWorkDate(new Date(), employee.timezone),
+  });
+
+  if (!attendance) {
+    return {
+      employee: employee._id,
+      shift: employee.shift,
+      attendance: null,
+      shiftMetrics: null,
+    };
+  }
+
+  const shiftMetrics = employee.shift
+    ? calculateShiftAttendance(attendance, employee.shift)
+    : null;
+
+  return {
+    employee: employee._id,
+    shift: employee.shift,
+    attendance,
+    shiftMetrics,
+  };
+};
 const getWorkDate = (date, timezone) => {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
@@ -186,15 +227,15 @@ attendance.totalWorkedTimeFormatted =
   return attendance;
 };
 
-export const getTimeClockStatusService = async (employeeId) => {
-  const attendance = await Attendance.findOne({
-    employee: employeeId,
-    status: { $in: ["ON_DUTY", "ON_BREAK"] },
-  }).sort({ clockInTime: -1 });
+// export const getTimeClockStatusService = async (employeeId) => {
+//   const attendance = await Attendance.findOne({
+//     employee: employeeId,
+//     status: { $in: ["ON_DUTY", "ON_BREAK"] },
+//   }).sort({ clockInTime: -1 });
 
-  return {
-    isClockedIn: Boolean(attendance),
-    status: attendance?.status || "OFF_DUTY",
-    attendance,
-  };
-};
+//   return {
+//     isClockedIn: Boolean(attendance),
+//     status: attendance?.status || "OFF_DUTY",
+//     attendance,
+//   };
+// };
