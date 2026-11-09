@@ -4,6 +4,7 @@ import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorizeRoles from "../middleware/roleMiddleware.js";
 import employeeMiddleware from "../middleware/employeeMiddleware.js";
+import targetEmployeeMiddleware from "../middleware/targetEmployeeMiddleware.js";
 
 import {
   clockIn,
@@ -16,14 +17,43 @@ import {
 const router = express.Router();
 
 router.use(authMiddleware);
-router.use(authorizeRoles("AGENT", "EMPLOYEE"));
-router.use(employeeMiddleware);
 
-router.get("/status", getTimeClockStatus);
+const selfTimeClockRoles = authorizeRoles(
+  "ADMIN",
+  "AGENT",
+  "EMPLOYEE",
+  "TIMEKEEPER",
+  "SUPERVISOR",
+);
+const employeeTimeClockRoles = authorizeRoles(
+  "ADMIN",
+  "TIMEKEEPER",
+  "SUPERVISOR",
+);
 
-router.post("/clock-in", clockIn);
-router.post("/start-break", startBreak);
-router.post("/end-break", endBreak);
-router.post("/clock-out", clockOut);
+router.get(
+  "/status",
+  selfTimeClockRoles,
+  employeeMiddleware,
+  getTimeClockStatus,
+);
+
+router.post("/clock-in", selfTimeClockRoles, employeeMiddleware, clockIn);
+router.post("/start-break", selfTimeClockRoles, employeeMiddleware, startBreak);
+router.post("/end-break", selfTimeClockRoles, employeeMiddleware, endBreak);
+router.post("/clock-out", selfTimeClockRoles, employeeMiddleware, clockOut);
+
+router.post(
+  "/employees/:employeeId/clock-in",
+  employeeTimeClockRoles,
+  targetEmployeeMiddleware,
+  clockIn,
+);
+router.post(
+  "/employees/:employeeId/clock-out",
+  employeeTimeClockRoles,
+  targetEmployeeMiddleware,
+  clockOut,
+);
 
 export default router;

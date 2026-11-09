@@ -5,7 +5,9 @@ import agentRoutes from "./routes/agentRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
-import employeeRoutes from "./routes/employeeRoutes.js";
+import employeeRoutes, {
+  employeeRegistrationRouter,
+} from "./routes/employeeRoutes.js";
 import timeClockRoutes from "./routes/timeClockRoutes.js";
 
 const app = express();
@@ -58,6 +60,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminCustomersRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/employees", employeeRegistrationRouter);
 app.use("/api/admin/employees", employeeRoutes);
 app.use("/api/employee/time-clock", timeClockRoutes);
 app.use("/api", attendanceRoutes);

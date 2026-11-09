@@ -1,4 +1,3 @@
-
 import express from "express";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -6,15 +5,20 @@ import authorizeRoles from "../middleware/roleMiddleware.js";
 
 import {
   createEmployee,
-  getEmployees,
-  getEmployeeById,
-  updateEmployee,
-  updateEmployeeStatus,
   deleteEmployee,
+  getEmployeeById,
+  getEmployees,
+  registerEmployee,
+  updateEmployee,
   updateEmployeeRole,
+  updateEmployeeStatus,
 } from "../controllers/employeeController.js";
 
 const router = express.Router();
+
+export const employeeRegistrationRouter = express.Router();
+
+employeeRegistrationRouter.post("/register", registerEmployee);
 
 router.use(authMiddleware);
 router.use(authorizeRoles("ADMIN"));

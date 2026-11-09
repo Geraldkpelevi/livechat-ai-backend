@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const employeeSchema = new mongoose.Schema(
@@ -12,8 +11,8 @@ const employeeSchema = new mongoose.Schema(
 
     employeeNumber: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       trim: true,
       uppercase: true,
     },
@@ -45,8 +44,8 @@ const employeeSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "SUSPENDED"],
-      default: "ACTIVE",
+      enum: ["PENDING", "ACTIVE", "INACTIVE", "SUSPENDED"],
+      default: "PENDING",
     },
 
     dateHired: {
@@ -62,12 +61,18 @@ const employeeSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+    },
+
+    registrationSource: {
+      type: String,
+      enum: ["ADMIN", "SELF"],
+      default: "ADMIN",
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 employeeSchema.index({ department: 1, status: 1 });

@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -26,7 +25,30 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-       enum: ["CUSTOMER", "EMPLOYEE", "AGENT", "MANAGER", "ADMIN", "SUPER_ADMIN", "SUPERVISOR", "HR", "ACCOUNTANT", "IT_SUPPORT", "SALES", "MARKETING", "DEVELOPER", "DESIGNER", "ANALYST", "CONSULTANT", "PROJECT_MANAGER", "TEAM_LEAD", "DIRECTOR", "VP", "C_LEVEL"],
+      enum: [
+        "CUSTOMER",
+        "EMPLOYEE",
+        "AGENT",
+        "MANAGER",
+        "ADMIN",
+        "SUPER_ADMIN",
+        "TIMEKEEPER",
+        "SUPERVISOR",
+        "HR",
+        "ACCOUNTANT",
+        "IT_SUPPORT",
+        "SALES",
+        "MARKETING",
+        "DEVELOPER",
+        "DESIGNER",
+        "ANALYST",
+        "CONSULTANT",
+        "PROJECT_MANAGER",
+        "TEAM_LEAD",
+        "DIRECTOR",
+        "VP",
+        "C_LEVEL",
+      ],
       default: "CUSTOMER",
     },
 
@@ -37,7 +59,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User = mongoose.model("User", userSchema);

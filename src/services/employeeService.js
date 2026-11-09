@@ -1,7 +1,134 @@
+import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import Employee from "../models/Employee.js";
+import EmployeeSequence from "../models/EmployeeSequence.js";
 import User from "../models/User.js";
+import { getPagination } from "../utils/attendanceQuery.js";
 
+const getNextEmployeeNumber = async (session) => {
+  let employeeNumber;
+
+  do {
+    const sequence = await EmployeeSequence.findOneAndUpdate(
+      { _id: "employeeNumber" },
+      [
+        {
+          $set: {
+            value: {
+              $add: [{ $ifNull: ["$value", -1] }, 1],
+            },
+          },
+        },
+      ],
+      {
+        session,
+        upsert: true,
+        returnDocument: "after",
+        updatePipeline: true,
+      },
+    );
+
+    employeeNumber = String(sequence.value);
+  } while (await Employee.exists({ employeeNumber }).session(session));
+
+  return employeeNumber;
+};
+
+export const registerEmployeeService = async (data) => {
+  const {
+    name,
+    email,
+    password,
+    jobTitle,
+    department,
+    employmentType,
+    employmentRole,
+    timezone,
+  } = data;
+
+  // Validate required fields
+  if (
+    !name ||
+    !email ||
+    !password ||
+    !jobTitle ||
+    !department ||
+    !employmentRole
+  ) {
+    throw new Error("Please provide all required employee details");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  // Check existing user
+  const existingUser = await User.findOne({
+    email: email.toLowerCase().trim(),
+  });
+
+  if (existingUser) {
+    throw new Error("An account with this email already exists");
+  }
+
+  const session = await mongoose.startSession();
+
+  try {
+    let employee;
+
+    await session.withTransaction(async () => {
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const employeeNumber = await getNextEmployeeNumber(session);
+
+      // Create user account
+      const [user] = await User.create(
+        [
+          {
+            name,
+            email: email.toLowerCase().trim(),
+            password: hashedPassword,
+
+            // Never accept role from the request body
+            role: "EMPLOYEE",
+
+            isActive: true,
+          },
+        ],
+        { session },
+      );
+
+      // Create employee profile
+      const [newEmployee] = await Employee.create(
+        [
+          {
+            user: user._id,
+            jobTitle,
+            department,
+            employeeNumber,
+            employmentType: employmentType || "FULL_TIME",
+            employmentRole: employmentRole || "EMPLOYEE",
+            timezone: timezone || "UTC",
+
+            // Employee requires admin approval
+            status: "PENDING",
+
+            // No admin created this account
+            createdBy: null,
+            registrationSource: "SELF",
+          },
+        ],
+        { session },
+      );
+
+      employee = newEmployee;
+    });
+
+    return employee;
+  } finally {
+    await session.endSession();
+  }
+};
 export const createEmployeeService = async (data, adminId) => {
   const {
     userId,
@@ -19,9 +146,13 @@ export const createEmployeeService = async (data, adminId) => {
     throw new Error("User account not found");
   }
 
-  if (!["AGENT", "EMPLOYEE"].includes(user.role)) {
+  if (
+    !["ADMIN", "AGENT", "EMPLOYEE", "TIMEKEEPER", "SUPERVISOR"].includes(
+      user.role,
+    )
+  ) {
     throw new Error(
-      "Only agent or employee accounts can have employee profiles",
+      "Only admin, agent, employee, timekeeper, or supervisor accounts can have employee profiles",
     );
   }
 
@@ -51,15 +182,31 @@ export const createEmployeeService = async (data, adminId) => {
 
 export const getEmployeesService = async (filters = {}) => {
   const query = {};
+  const { page, limit, skip } = getPagination(filters);
 
   if (filters.status) query.status = filters.status;
   if (filters.department) query.department = filters.department;
 
-  const employees = await Employee.find(query)
-    .populate("user", "name email role isActive")
-    .sort({ createdAt: -1 });
+  const [employees, totalRecords] = await Promise.all([
+    Employee.find(query)
+      .populate("user", "name email role isActive")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Employee.countDocuments(query),
+  ]);
 
-  return employees;
+  return {
+    employees,
+    pagination: {
+      totalRecords,
+      currentPage: page,
+      totalPages: Math.ceil(totalRecords / limit),
+      pageLimit: limit,
+      hasNextPage: page * limit < totalRecords,
+      hasPreviousPage: page > 1,
+    },
+  };
 };
 
 export const getEmployeeByIdService = async (id) => {
@@ -98,7 +245,7 @@ export const updateEmployeeService = async (id, data) => {
     id,
     { $set: updates },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   ).populate("user", "name email role isActive");
@@ -141,11 +288,7 @@ export const updateEmployeeStatusService = async (id, status) => {
   return employee;
 };
 
-export const updateEmployeeRoleService = async (
-  employeeId,
-  role,
-  adminId,
-) => {
+export const updateEmployeeRoleService = async (employeeId, role, adminId) => {
   if (!mongoose.isValidObjectId(employeeId)) {
     const error = new Error("Invalid employee ID");
     error.statusCode = 400;
@@ -190,6 +333,7 @@ export const updateEmployeeRoleService = async (
     "VP",
     "C_LEVEL",
     "ADMIN",
+    "TIMEKEEPER",
   ];
 
   if (!allowedRoles.includes(role)) {
@@ -218,9 +362,7 @@ export const updateEmployeeRoleService = async (
   }
 
   if (employee.status !== "ACTIVE") {
-    const error = new Error(
-      "Only active employees can receive employee roles",
-    );
+    const error = new Error("Only active employees can receive employee roles");
     error.statusCode = 403;
     throw error;
   }

@@ -7,13 +7,15 @@ import {
   updateEmployeeStatusService,
   deleteEmployeeService,
   updateEmployeeRoleService,
+  registerEmployeeService
 } from "../services/employeeService.js";
 
+// ADMIN: Create employee profile
 export const createEmployee = async (req, res, next) => {
   try {
     const employee = await createEmployeeService(
       req.body,
-      req.user._id
+      req.user._id,
     );
 
     return res.status(201).json({
@@ -26,14 +28,31 @@ export const createEmployee = async (req, res, next) => {
   }
 };
 
+// PUBLIC: Employee self-registration
+export const registerEmployee = async (req, res, next) => {
+  try {
+    const employee = await registerEmployeeService(req.body);
+
+    return res.status(201).json({
+      success: true,
+      message: "Employee registration submitted successfully. Awaiting admin approval.",
+      data: employee,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const getEmployees = async (req, res, next) => {
   try {
-    const employees = await getEmployeesService(req.query);
+    const result = await getEmployeesService(req.query);
 
     return res.status(200).json({
       success: true,
       message: "Employees retrieved successfully",
-      data: employees,
+      data: result.employees,
+      meta: result.pagination,
     });
   } catch (error) {
     next(error);
