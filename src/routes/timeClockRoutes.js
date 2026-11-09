@@ -1,17 +1,16 @@
-
 import express from "express";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-import authorizeRoles from "../middleware/roleMiddleware.js";
 import employeeMiddleware from "../middleware/employeeMiddleware.js";
+import authorizeRoles from "../middleware/roleMiddleware.js";
 import targetEmployeeMiddleware from "../middleware/targetEmployeeMiddleware.js";
 
 import {
   clockIn,
-  startBreak,
-  endBreak,
   clockOut,
+  endBreak,
   getTimeClockStatus,
+  startBreak,
 } from "../controllers/timeClockController.js";
 
 const router = express.Router();
