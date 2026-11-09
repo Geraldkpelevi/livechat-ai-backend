@@ -1,10 +1,17 @@
+
 import mongoose from "mongoose";
 import Attendance from "../models/Attendance.js";
 import AttendanceCorrection from "../models/AttendanceCorrection.js";
+
 import {
   buildAttendanceFilters,
   getPagination,
 } from "../utils/attendanceQuery.js";
+
+import {
+  serializeAttendance,
+  serializeAttendanceList,
+} from "../utils/attendanceSerializer.js";
 
 const throwError = (message, statusCode = 400) => {
   const error = new Error(message);
@@ -54,25 +61,37 @@ const calculateDurations = (clockInTime, clockOutTime, breaks) => {
     const start = new Date(item.startedAt).getTime();
     const end = new Date(item.endedAt).getTime();
 
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    if (
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      end <= start
+    ) {
       throwError("Every break must have a valid start and end time");
     }
 
     if (start < clockIn || end > clockOut) {
-      throwError("Break times must fall between clock-in and clock-out");
+      throwError(
+        "Break times must fall between clock-in and clock-out"
+      );
     }
 
     totalBreakMilliseconds += end - start;
   }
 
   const sortedBreaks = [...breaks].sort(
-    (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
+    (a, b) =>
+      new Date(a.startedAt).getTime() -
+      new Date(b.startedAt).getTime()
   );
 
   for (let index = 1; index < sortedBreaks.length; index += 1) {
-    const previousEnd = new Date(sortedBreaks[index - 1].endedAt).getTime();
+    const previousEnd = new Date(
+      sortedBreaks[index - 1].endedAt
+    ).getTime();
 
-    const currentStart = new Date(sortedBreaks[index].startedAt).getTime();
+    const currentStart = new Date(
+      sortedBreaks[index].startedAt
+    ).getTime();
 
     if (currentStart < previousEnd) {
       throwError("Break periods cannot overlap");
@@ -81,13 +100,15 @@ const calculateDurations = (clockInTime, clockOutTime, breaks) => {
 
   const workedMilliseconds = Math.max(
     0,
-    clockOut - clockIn - totalBreakMilliseconds,
+    clockOut - clockIn - totalBreakMilliseconds
   );
 
   return {
-    totalBreakMinutes: Math.round((totalBreakMilliseconds / 60000) * 100) / 100,
+    totalBreakMinutes:
+      Math.round((totalBreakMilliseconds / 60000) * 100) / 100,
 
-    totalWorkedMinutes: Math.round((workedMilliseconds / 60000) * 100) / 100,
+    totalWorkedMinutes:
+      Math.round((workedMilliseconds / 60000) * 100) / 100,
   };
 };
 
@@ -108,7 +129,8 @@ export const getAllAttendanceService = async (query) => {
   ]);
 
   return {
-    attendance,
+    attendance: serializeAttendanceList(attendance),
+
     pagination: {
       totalRecords,
       currentPage: page,
@@ -142,18 +164,21 @@ export const getAttendanceByIdService = async (attendanceId) => {
     .lean();
 
   return {
-    ...attendance,
+    ...serializeAttendance(attendance),
     corrections,
   };
 };
 
 // EMPLOYEE: Get the authenticated employee's history
-export const getEmployeeAttendanceService = async (employeeId, query) => {
+export const getEmployeeAttendanceService = async (
+  employeeId,
+  query
+) => {
   const { page, limit, skip } = getPagination(query);
 
   const filters = await buildAttendanceFilters(query);
 
-  // Never allow the employee to query another employee's records.
+  // Never allow an employee to query another employee's records.
   filters.employee = employeeId;
 
   const [attendance, totalRecords] = await Promise.all([
@@ -167,7 +192,8 @@ export const getEmployeeAttendanceService = async (employeeId, query) => {
   ]);
 
   return {
-    attendance,
+    attendance: serializeAttendanceList(attendance),
+
     pagination: {
       totalRecords,
       currentPage: page,
@@ -183,15 +209,21 @@ export const getEmployeeAttendanceService = async (employeeId, query) => {
 export const correctAttendanceService = async (
   attendanceId,
   correctionData,
-  adminId,
+  adminId
 ) => {
   if (!mongoose.Types.ObjectId.isValid(attendanceId)) {
     throwError("Invalid attendance ID", 400);
   }
 
-  const { reason, clockInTime, clockOutTime, breaks, notes } = correctionData;
+  const {
+    reason,
+    clockInTime,
+    clockOutTime,
+    breaks,
+    notes,
+  } = correctionData;
 
-  if (!reason || !reason.trim()) {
+  if (typeof reason !== "string" || !reason.trim()) {
     throwError("A correction reason is required");
   }
 
@@ -205,15 +237,19 @@ export const correctAttendanceService = async (
 
   try {
     await session.withTransaction(async () => {
-      const attendance =
-        await Attendance.findById(attendanceId).session(session);
+      const attendance = await Attendance.findById(
+        attendanceId
+      ).session(session);
 
       if (!attendance) {
         throwError("Attendance record not found", 404);
       }
 
       if (attendance.status !== "COMPLETED") {
-        throwError("Only completed attendance records can be corrected", 409);
+        throwError(
+          "Only completed attendance records can be corrected",
+          409
+        );
       }
 
       const before = getAttendanceSnapshot(attendance);
@@ -232,15 +268,29 @@ export const correctAttendanceService = async (
       ) {
         throwError("Invalid clock-in or clock-out date");
       }
+
       if (breaks !== undefined && !Array.isArray(breaks)) {
         throwError("Breaks must be an array");
       }
+
       const nextBreaks =
         breaks !== undefined
-          ? breaks.map((item) => ({
-              startedAt: new Date(item.startedAt),
-              endedAt: new Date(item.endedAt),
-            }))
+          ? breaks.map((item) => {
+              if (
+                !item ||
+                !item.startedAt ||
+                !item.endedAt
+              ) {
+                throwError(
+                  "Each break must have startedAt and endedAt"
+                );
+              }
+
+              return {
+                startedAt: new Date(item.startedAt),
+                endedAt: new Date(item.endedAt),
+              };
+            })
           : attendance.breaks.map((item) => ({
               startedAt: item.startedAt,
               endedAt: item.endedAt,
@@ -250,7 +300,7 @@ export const correctAttendanceService = async (
         nextBreaks.some(
           (item) =>
             !Number.isFinite(item.startedAt.getTime()) ||
-            !Number.isFinite(item.endedAt.getTime()),
+            !Number.isFinite(item.endedAt.getTime())
         )
       ) {
         throwError("Invalid break date");
@@ -259,7 +309,7 @@ export const correctAttendanceService = async (
       const durations = calculateDurations(
         nextClockIn,
         nextClockOut,
-        nextBreaks,
+        nextBreaks
       );
 
       attendance.clockInTime = nextClockIn;
@@ -287,7 +337,7 @@ export const correctAttendanceService = async (
             after,
           },
         ],
-        { session },
+        { session }
       );
 
       correctedAttendance = attendance;
@@ -296,7 +346,11 @@ export const correctAttendanceService = async (
     await session.endSession();
   }
 
-  return Attendance.findById(correctedAttendance._id)
+  const updatedAttendance = await Attendance.findById(
+    correctedAttendance._id
+  )
     .populate(attendancePopulation)
     .lean();
+
+  return serializeAttendance(updatedAttendance);
 };

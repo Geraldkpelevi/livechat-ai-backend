@@ -6,7 +6,9 @@ import {
   clockOutService,
   getTimeClockStatusService,
 } from "../services/timeClockService.js";
-
+import {
+  serializeAttendance,
+} from "../utils/attendanceSerializer.js";
 export const clockIn = async (req, res, next) => {
   try {
     const attendance = await clockInService(
@@ -62,7 +64,7 @@ export const clockOut = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Clocked out successfully",
-      data: attendance,
+      data: serializeAttendance(attendance),
     });
   } catch (error) {
     next(error);
