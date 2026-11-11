@@ -11,8 +11,10 @@ import {
   updateEmployeeStatus,
 } from "../controllers/employeeController.js";
 import { assignEmployeeShift } from "../controllers/employeeShiftController.js";
+import { clockIn, clockOut } from "../controllers/timeClockController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorizeRoles from "../middleware/roleMiddleware.js";
+import targetEmployeeMiddleware from "../middleware/targetEmployeeMiddleware.js";
 
 const router = express.Router();
 
@@ -33,9 +35,21 @@ router.patch("/:id/role", updateEmployeeRole);
 
 // Only ADMIN can assign or remove employee shifts.
 router.patch(
-  "/employees/:employeeId/shift",
+  "/:employeeId/shift",
   authorizeRoles("ADMIN"),
   assignEmployeeShift,
+);
+router.post(
+  "/:employeeId/clock-in",
+  authorizeRoles("ADMIN"),
+  targetEmployeeMiddleware,
+  clockIn,
+);
+router.post(
+  "/:employeeId/clock-out",
+  authorizeRoles("ADMIN"),
+  targetEmployeeMiddleware,
+  clockOut,
 );
 
 export default router;

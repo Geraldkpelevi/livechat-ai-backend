@@ -73,7 +73,7 @@ export const clockOut = async (req, res, next) => {
 
 export const getTimeClockStatus = async (req, res, next) => {
   try {
-    const status = await getTimeClockStatusService(req.employee._id);
+    const status = await getTimeClockStatusService(req.user._id);
 
     return res.status(200).json({
       success: true,

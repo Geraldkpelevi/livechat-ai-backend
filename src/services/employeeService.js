@@ -147,12 +147,31 @@ export const createEmployeeService = async (data, adminId) => {
   }
 
   if (
-    !["ADMIN", "AGENT", "EMPLOYEE", "TIMEKEEPER", "SUPERVISOR"].includes(
-      user.role,
-    )
+    ![
+      "EMPLOYEE",
+      "AGENT",
+      "MANAGER",
+      "SUPERVISOR",
+      "HR",
+      "ACCOUNTANT",
+      "IT_SUPPORT",
+      "SALES",
+      "MARKETING",
+      "DEVELOPER",
+      "TIMEKEEPER",
+      "DESIGNER",
+      "ANALYST",
+      "CONSULTANT",
+      "PROJECT_MANAGER",
+      "TEAM_LEAD",
+      "DIRECTOR",
+      "VP",
+      "C_LEVEL",
+      "ADMIN",
+    ].includes(user.role)
   ) {
     throw new Error(
-      "Only admin, agent, employee, timekeeper, or supervisor accounts can have employee profiles",
+      "This account role cannot have an employee profile",
     );
   }
 

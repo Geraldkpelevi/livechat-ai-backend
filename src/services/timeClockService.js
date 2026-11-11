@@ -8,12 +8,20 @@ import {
   calculateShiftAttendance,
 } from "../utils/shiftAttendanceCalculator.js";
 
-export const getTimeClockStatusService = async (employeeId) => {
-  const employee = await Employee.findById(employeeId)
+export const getTimeClockStatusService = async (userId) => {
+  const employee = await Employee.findOne({
+    user: userId,
+    status: "ACTIVE",
+  })
     .populate("shift");
 
   if (!employee) {
-    throw new Error("Employee not found");
+    return {
+      employee: null,
+      shift: null,
+      attendance: null,
+      shiftMetrics: null,
+    };
   }
 
   // Keep your existing logic for finding today's attendance.

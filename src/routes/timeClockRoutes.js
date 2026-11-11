@@ -21,8 +21,23 @@ const selfTimeClockRoles = authorizeRoles(
   "ADMIN",
   "AGENT",
   "EMPLOYEE",
-  "TIMEKEEPER",
+  "MANAGER",
   "SUPERVISOR",
+  "HR",
+  "ACCOUNTANT",
+  "IT_SUPPORT",
+  "SALES",
+  "MARKETING",
+  "DEVELOPER",
+  "TIMEKEEPER",
+  "DESIGNER",
+  "ANALYST",
+  "CONSULTANT",
+  "PROJECT_MANAGER",
+  "TEAM_LEAD",
+  "DIRECTOR",
+  "VP",
+  "C_LEVEL",
 );
 const employeeTimeClockRoles = authorizeRoles(
   "ADMIN",
@@ -33,7 +48,6 @@ const employeeTimeClockRoles = authorizeRoles(
 router.get(
   "/status",
   selfTimeClockRoles,
-  employeeMiddleware,
   getTimeClockStatus,
 );
 
